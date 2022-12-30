@@ -1,1 +1,5 @@
+#token files
 token*
+
+#venv folders
+*/*venv
