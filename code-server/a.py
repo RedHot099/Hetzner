@@ -27,9 +27,8 @@ client = Client(
 
 ssh_key_name = index+"-ssh-key"
 network_name = index+"-subnet"
-volume_name = index+"-vol"
-db_name = index+"-db"
-server_name = index+"-server"
+volume_name = index+"-code-vol"
+server_name = index+"-code-server"
 
 try:
     ssh_key = client.ssh_keys.create(name=ssh_key_name, public_key=ssh_public_key)
