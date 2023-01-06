@@ -2,6 +2,7 @@ from hcloud import Client
 from hcloud.locations.domain import Location
 from hcloud.images.domain import Image
 from hcloud.server_types.domain import ServerType
+from hcloud.networks.domain import NetworkSubnet
 
 import sys
 
@@ -26,9 +27,9 @@ client = Client(
 
 ssh_key_name = index+"-ssh-key"
 network_name = index+"-subnet"
-volume_name = index+"-vol"
-db_name = index+"-db"
-server_name = index+"-server"
+volume_name = index+"-gitea-vol"
+db_name = index+"-gitea-db"
+server_name = index+"-gitea-server"
 
 try:
     ssh_key = client.ssh_keys.create(name=ssh_key_name, public_key=ssh_public_key)
@@ -36,8 +37,6 @@ except:
     ssh_key = client.ssh_keys.get_by_name(name=ssh_key_name)
 print(f"SSH key {ssh_key.data_model.name} added: {ssh_key.data_model.public_key}")
 
-
-from hcloud.networks.domain import NetworkSubnet
 
 try:
     vnet = client.networks.create(
@@ -55,6 +54,14 @@ except:
     print(f"Network in use: {vnet.data_model.name} ({vnet.data_model.ip_range})")
 
 
+
+volume = client.volumes.create(
+    name=volume_name,
+    size=10,
+    format='ext4',
+    location=Location("hel1")
+)
+print(f"Created data volume: {volume.volume.name}")
 
 
 cloud_init_postgres=r'''#cloud-config
@@ -148,11 +155,10 @@ write_files:
             networks:
               - gitea
             volumes:
-              - ./data:/root/gitea
-              - ./config:/root/gitea/config
+              - /mnt/'''+volume_name+r'''/data:/var/lib/gitea
+              - /mnt/'''+volume_name+r'''/config:/etc/gitea  
               - /etc/timezone:/etc/timezone:ro
               - /etc/localtime:/etc/localtime:ro
-              - /mnt/volume:/data
             ports:
               - "3000:3000"
               - "222:22"
@@ -170,6 +176,15 @@ runcmd:
   - cd /root/
   - IP=$(hostname -I | cut -d ' ' -f 1)
   - echo "DOMAIN=$IP" >> .env
+
+  - sudo mkfs.ext4 -F /dev/disk/by-id/scsi-0HC_Volume_{volume.volume.id}
+  - mkdir /mnt/{volume_name}
+  - mount -o discard,defaults /dev/disk/by-id/scsi-0HC_Volume_{volume.volume.id} /mnt/{volume_name}
+  - echo "/dev/disk/by-id/scsi-0HC_Volume_{volume.volume.id} /mnt/{volume_name} ext4 discard,nofail,defaults 0 0" >> /etc/fstab
+  - mkdir /mnt/{volume_name}/data
+  - mkdir /mnt/{volume_name}/config
+  - sudo chown 1000:1000 /mnt/{volume_name}/config/ /mnt/{volume_name}/data
+
   - docker-compose up -d
 '''
 
@@ -181,6 +196,8 @@ gitea_server = client.servers.create(
     image=Image(name="ubuntu-20.04"), 
     ssh_keys=[ssh_key], 
     networks=[vnet], 
+    volumes=[volume.volume],
+    automount=True,
     location=Location("hel1"), 
     user_data=cloud_init_gitea
 )
