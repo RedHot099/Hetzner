@@ -79,8 +79,8 @@ runcmd:
   - chmod +x /usr/local/bin/docker-compose
   - systemctl start docker
   - systemctl enable docker
-  - git clone https://git.wmi.amu.edu.pl/s443930/aws-webservice.git
-  - cd aws-webservice/get
+  - git clone https://git.wmi.amu.edu.pl/bikol/DPZC-2022-23.git
+  - cd 04_Public_cloud/zadania
   - docker build -t webservice .
   - docker run -d -p 80:8080 -t webservice
 '''
