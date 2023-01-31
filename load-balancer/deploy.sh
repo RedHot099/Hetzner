@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Creating virtual enviroment ..."
-python3 -m venv hetz_gitea_venv 
+python3 -m venv hetz_lb_venv 
 echo "Installing dependencies ..."
 pip install -q hcloud
 echo "Initiating load balancer cloud deploy ..."
