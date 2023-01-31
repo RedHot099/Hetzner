@@ -81,8 +81,8 @@ runcmd:
   - systemctl enable docker
   - git clone https://git.wmi.amu.edu.pl/bikol/DPZC-2022-23.git
   - cd 04_Public_cloud/zadania
-  - docker build -t webservice .
-  - docker run -d -p 80:8080 -t webservice
+  - chmod +x ./webservice
+  - ./webservice
 '''
 
 
